@@ -1,14 +1,40 @@
 public class SlowCalculator implements Runnable {
 
     private final long N;
+    private int result;
+    private String status;
 
     public SlowCalculator(final long N) {
         this.N = N;
+        this.result = -1;
+        this.status = "waiting"; // waiting, running, completed, interrupted
     }
 
+    @Override
     public void run() {
-        final int result = calculateNumFactors(N);
-        System.out.println(result);  // you'll be changing this
+        status = "running";
+        
+        try {
+            if(Thread.interrupted()){ // check if current thread (executing this method) is interrupted, sets interrupted flag back to false
+                throw new InterruptedException();
+            }
+            result = calculateNumFactors(N);
+            status = "completed";
+            System.out.println(result);  // Print the result
+        } catch (InterruptedException e) {
+            status = "interrupted";  // Set status to interrupted if interrupted during execution
+            Thread.currentThread().interrupt();  // set interrupt flag to ture, preserve the flag
+            System.out.println("Task " + N + " was interrupted.");
+        }
+    }
+    
+
+    public String getStatus() {
+        return status;  // Return current status
+    }
+
+    public int getResult() {
+        return result;
     }
 
     private static int calculateNumFactors(final long N) {
