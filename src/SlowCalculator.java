@@ -2,28 +2,26 @@ public class SlowCalculator implements Runnable {
 
     private final long N;
     private int result;
-    private String status;
+    private volatile String status; // volatile for thread safety, always read from memory not cache, changes immediately visible to other threads
 
     public SlowCalculator(final long N) {
         this.N = N;
         this.result = -1;
-        this.status = "waiting"; // waiting, running, completed, interrupted
+        this.status = "waiting"; // waiting, calculating, completed, interrupted, cancelled
     }
 
+    
     @Override
     public void run() {
         status = "running";
         
         try {
-            if(Thread.interrupted()){ // check if current thread (executing this method) is interrupted, sets interrupted flag back to false
-                throw new InterruptedException();
-            }
-            result = calculateNumFactors(N);
+            result = calculateNumFactors(N);  // Perform calculation
             status = "completed";
-            System.out.println(result);  // Print the result
+            System.out.println(result);  
         } catch (InterruptedException e) {
-            status = "interrupted";  // Set status to interrupted if interrupted during execution
-            Thread.currentThread().interrupt();  // set interrupt flag to ture, preserve the flag
+            status = "interrupted";  
+            Thread.currentThread().interrupt();  // Preserve the interrupt flag
             System.out.println("Task " + N + " was interrupted.");
         }
     }
@@ -37,12 +35,19 @@ public class SlowCalculator implements Runnable {
         return result;
     }
 
-    private static int calculateNumFactors(final long N) {
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    private static int calculateNumFactors(final long N) throws InterruptedException{
         // This (very inefficiently) finds and returns the number of unique prime factors of |N|
         // You don't need to think about the mathematical details; what's important is that it does some slow calculation taking N as input
         // You should NOT modify the calculation performed by this class, but you may want to add support for interruption
         int count = 0;
         for (long candidate = 2; candidate < Math.abs(N); ++candidate) {
+            if(Thread.interrupted()){
+                throw new InterruptedException();
+            }
             if (isPrime(candidate)) {
                 if (Math.abs(N) % candidate == 0) {
                     count++;
