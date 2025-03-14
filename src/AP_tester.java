@@ -1,8 +1,8 @@
 public class AP_tester {
 	public static void main(String[] args) {
 		Solution solution = new Solution();
-//		instructionTester(solution);
-//		abortSpeedTester(solution);
+		// instructionTester(solution);
+		abortSpeedTester(solution);
 //		successiveAfterTester(solution);
 //		AfterNoRunnableThread(solution);
 //		circularDependencyTester(solution);
@@ -16,15 +16,15 @@ public class AP_tester {
 	}
 	
 	public static void instructionTester(Solution solution) {
-		System.out.println(solution.runCommand("start 10456060"));
+		System.out.println(solution.runCommand("start 104560"));
 		System.out.println(solution.runCommand("running"));
 		sleep();
-		System.out.println(solution.runCommand("get 10456060"));
-		System.out.println(solution.runCommand("start 72345680"));
-		System.out.println(solution.runCommand("start 534912560"));
-		System.out.println(solution.runCommand("get 534912560"));
+		System.out.println(solution.runCommand("get 104560"));
+		System.out.println(solution.runCommand("start 723456"));
+		System.out.println(solution.runCommand("start 5349125"));
+		System.out.println(solution.runCommand("get 5349125"));
 		System.out.println(solution.runCommand("running"));
-		System.out.println(solution.runCommand("cancel 72345680"));
+		System.out.println(solution.runCommand("cancel 723456"));
 		System.out.println(solution.runCommand("running"));
 		System.out.println(solution.runCommand("finish"));
 	}

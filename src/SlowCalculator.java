@@ -3,24 +3,26 @@ public class SlowCalculator implements Runnable {
     private final long N;
     private int result;
     private volatile String status; // volatile for thread safety, always read from memory not cache, changes immediately visible to other threads
+    // private boolean isComplete;
 
     public SlowCalculator(final long N) {
         this.N = N;
         this.result = -1;
-        this.status = "waiting"; // waiting, calculating, completed, interrupted, cancelled
+        this.status = "waiting"; // waiting, calculating, completed,cancelled
     }
 
     
     @Override
     public void run() {
-        status = "running";
-        
+        status = "calculating";
+        System.out.println("Started calculation for N=" + N);
+
         try {
             result = calculateNumFactors(N);  // Perform calculation
             status = "completed";
-            System.out.println(result);  
+            System.out.println("Calculation completed for N=" + N + ", result=" + result); 
         } catch (InterruptedException e) {
-            status = "interrupted";  
+            status = "cancelled";  
             Thread.currentThread().interrupt();  // Preserve the interrupt flag
             System.out.println("Task " + N + " was interrupted.");
         }
@@ -39,6 +41,7 @@ public class SlowCalculator implements Runnable {
         this.status = status;
     }
 
+
     private static int calculateNumFactors(final long N) throws InterruptedException{
         // This (very inefficiently) finds and returns the number of unique prime factors of |N|
         // You don't need to think about the mathematical details; what's important is that it does some slow calculation taking N as input
@@ -52,6 +55,10 @@ public class SlowCalculator implements Runnable {
                 if (Math.abs(N) % candidate == 0) {
                     count++;
                 }
+            }
+            //REMOVE:  Print progress every 1 million iterations
+            if (candidate % 1_000_000 == 0) {
+                System.out.println("Progress for N=" + N + ": candidate=" + candidate);
             }
         }
         return count;
