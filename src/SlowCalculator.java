@@ -2,34 +2,42 @@ public class SlowCalculator implements Runnable {
 
     private final long N;
     private int result;
-    private volatile String status; // volatile for thread safety, always read from memory not cache, changes immediately visible to other threads
+    private volatile STATE status; // volatile for thread safety, always read from memory not cache, changes immediately visible to other threads
     // private boolean isComplete;
+
+    enum STATE{
+        WAITING,
+        CALCULATING,
+        COMPLETED,
+        CANCELLED
+    }
 
     public SlowCalculator(final long N) {
         this.N = N;
         this.result = -1;
-        this.status = "waiting"; // waiting, calculating, completed,cancelled
+        this.status = STATE.WAITING; // waiting, calculating, completed,cancelled
     }
 
     
     @Override
     public void run() {
-        status = "calculating";
+        status = STATE.CALCULATING;
         System.out.println("Started calculation for N=" + N);
 
         try {
             result = calculateNumFactors(N);  // Perform calculation
-            status = "completed";
+            status = STATE.COMPLETED;
             System.out.println("Calculation completed for N=" + N + ", result=" + result); 
         } catch (InterruptedException e) {
-            status = "cancelled";  
+            status = STATE.CANCELLED;  
             Thread.currentThread().interrupt();  // Preserve the interrupt flag
-            System.out.println("Task " + N + " was interrupted.");
+            
+            // System.out.println("Task " + N + " was interrupted.");
         }
     }
     
 
-    public String getStatus() {
+    public STATE getStatus() {
         return status;  // Return current status
     }
 
@@ -37,8 +45,15 @@ public class SlowCalculator implements Runnable {
         return result;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(STATE status) {
         this.status = status;
+    }
+
+    public void scheduleafter(Thread n){
+        try{
+            n.join();
+        
+        } catch (InterruptedException e){}
     }
 
 
@@ -49,16 +64,12 @@ public class SlowCalculator implements Runnable {
         int count = 0;
         for (long candidate = 2; candidate < Math.abs(N); ++candidate) {
             if(Thread.interrupted()){
-                throw new InterruptedException();
+                throw new InterruptedException(); // will be caught in the run method, changing status to "cancelled"
             }
             if (isPrime(candidate)) {
                 if (Math.abs(N) % candidate == 0) {
                     count++;
                 }
-            }
-            //REMOVE:  Print progress every 1 million iterations
-            if (candidate % 1_000_000 == 0) {
-                System.out.println("Progress for N=" + N + ": candidate=" + candidate);
             }
         }
         return count;

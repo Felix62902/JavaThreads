@@ -1,3 +1,4 @@
+import java.lang.Thread.State;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -10,6 +11,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+// import SlowCalculator.STATE;
+
+
+
 public class Solution implements CommandRunner{
     // data structure
     //get count of available CPU cores
@@ -17,7 +22,7 @@ public class Solution implements CommandRunner{
     private final Map<Long, Thread> threads = new ConcurrentHashMap<>();  // to track state of thread identified by N e.g. <1497, t1>
     private final Map<Long, SlowCalculator> tasks = new ConcurrentHashMap<>(); // to track results/ status of thread identified by Ne.g. <1497, 21235667>
     private final Map<Long, Long> dependencies = new ConcurrentHashMap<>(); 
-    // a queue for after?
+
     
     public Solution(){}
 
@@ -54,8 +59,8 @@ public class Solution implements CommandRunner{
             int count = 0; 
             for (Map.Entry<Long, Thread> entry : threads.entrySet()){
                 Thread thread = entry.getValue();
-                SlowCalculator calculator = tasks.get(entry.getKey()); // Get the associated SlowCalculator
-                if (thread.isAlive() && calculator != null && calculator.getStatus().equals("calculating")) {
+                SlowCalculator calculator = tasks.get(entry.getKey()); // Get the associated SlowCalculator (one with the same key)
+                if ( calculator != null && calculator.getStatus()== SlowCalculator.STATE.CALCULATING) {
                     if (count > 0) {
                         runningMsg.append(" ");
                     }
@@ -66,23 +71,22 @@ public class Solution implements CommandRunner{
             return count == 0 ? "no calculations running" : count + " calculations running: " + runningMsg;
         } else if (cmd.equals("get")) {
             SlowCalculator calculator = tasks.get(N);
-            if (calculator == null) {
+            if (calculator == null) { 
                 return "cancelled";
             }
             switch (calculator.getStatus()) {
-                case "completed": return "result is " + calculator.getResult();
-                case "calculating": return "calculating";
-                case "cancelled": return "cancelled";
-                case "waiting": return "waiting";
+                case COMPLETED: return "result is " + calculator.getResult();
+                case CALCULATING: return "calculating";
+                case CANCELLED: return "cancelled";
+                case WAITING: return "waiting";
                 default: return "error";
             }
         } else if (cmd.equals("after")) {
             if (tokens.length != 3) return "Invalid command";
-            //schedule thread M to start when that of N finishes ( or is cancelled )
+
             // check circular dependency condition
             if (checkCircularDependency(M, N)) {
                 List<Long> dependencyChain = getDependencyChain(N);
-                dependencyChain.add(M);
                 StringBuilder circularDependencyMsg = new StringBuilder("circular dependency ");
                 for (Long num : dependencyChain) {
                     circularDependencyMsg.append(num).append(" ");
@@ -120,21 +124,23 @@ public class Solution implements CommandRunner{
         } else if (cmd.equals("abort")) {
             // stop all threads
             for (Map.Entry<Long, Thread> entry : threads.entrySet()) {
-                entry.getValue().interrupt();
+                entry.getValue().interrupt(); // Interrupt the thread
             }
-            Boolean notAborted = true;
-            while (notAborted) {
+
+            // Check if all tasks are cancelled or completed
+            boolean notAborted = true;
+            while(notAborted){
                 notAborted = false;
                 for (Map.Entry<Long, SlowCalculator> entry : tasks.entrySet()) {
-                    SlowCalculator t = entry.getValue();
-                    if (!t.getStatus().equals("cancelled")) {
+                    SlowCalculator.STATE status = entry.getValue().getStatus();
+                    if (status != SlowCalculator.STATE.CANCELLED && status != SlowCalculator.STATE.COMPLETED) {
                         notAborted = true;
                         break;
                     }
                 }
             }
+
             return "aborted";
-            
         } else {
             return "Invalid command";
         }
@@ -143,13 +149,33 @@ public class Solution implements CommandRunner{
 
       private boolean checkCircularDependency(long m, long n) { // backtracking
         //  try to see if n depends on m while m depends on n to prove circular dependency. n becomes starting point, m is ending point, if n can reach m, circular dependency
+        // Set<Long> visited = new HashSet<>();
+        // while (dependencies.containsKey(n)) { // always true unless n is not in the dependency
+        //     if (n == m) return true;            //if reaches starting point, it's a cycle
+        //     if (visited.contains(n)) return false; // if we've visited the node, no cycle
+        //     visited.add(n);
+        //     n = dependencies.get(n);  // move to next dependency 
+        // }
+        // return false;
+        ////////////
+        /// 
+        // Check if n depends on m (directly or indirectly)
+        Long current = n;
         Set<Long> visited = new HashSet<>();
-        while (dependencies.containsKey(n)) { // always true unless n is not in the dependency
-            if (n == m) return true;            //if reaches starting point, it's a cycle
-            if (visited.contains(n)) return false; // if we've visited the node, no cycle
-            visited.add(n);
-            n = dependencies.get(n);  // move to next dependency 
+        
+        while (dependencies.containsKey(current)) {
+            if (current == m) {
+                return true; // Found a cycle
+            }
+            
+            if (visited.contains(current)) {
+                break; // We've visited this node before, avoid infinite loop
+            }
+            
+            visited.add(current);
+            current = dependencies.get(current);
         }
+        
         return false;
     }
 
@@ -161,34 +187,41 @@ public class Solution implements CommandRunner{
         Set<Long> visited = new HashSet<>();
         while (dependencies.containsKey(n)) {
             if(visited.contains(n)){
-                chain.add(n);
+                // chain.add(n);
                 return chain;
             }
             chain.add(n);
             visited.add(n);
             n = dependencies.get(n);
         }
-        chain.add(n); // add lask task to chain
+        // chain.add(n); // add lask task to chain
         return chain;
     }
 
     private void scheduleAfter(long N, long M) {
         Thread threadN = threads.get(N);
-        SlowCalculator calculator = tasks.get(N);
-        if (threadN != null) {
-            new Thread(new Runnable() { // create runnable object on the fly
-                @Override
-                public void run() {
-                    try {
-                        threadN.join(); // Wait for N to finish
-                        if (calculator.getStatus().equals("completed")) {
-                            runCommand("start " + M); // Start M after N finishes
-                        }
-                    } catch (InterruptedException e) {
-                        // Ignore
-                    }
+        SlowCalculator calculatorN = tasks.get(N);
+        // SlowCalculator calculatorM = tasks.get(M);
+    
+        if (threadN != null && calculatorN != null) {
+            new Thread(() -> {
+                try {
+                    threadN.join(); // Wait for N to finish
+                } catch (InterruptedException e) {
+                    // Restore the interrupt flag
+                    Thread.currentThread().interrupt();
+                    System.err.println("Thread " + N + " was interrupted. Starting " + M + " immediately.");
                 }
-            }).start();            
+        
+                // Start M regardless of how N finished
+                SlowCalculator calculatorM = new SlowCalculator(M);
+                Thread threadM = new Thread(calculatorM);
+                
+                tasks.put(M, calculatorM);  // ✅ Store calculatorM
+                threads.put(M, threadM);    // ✅ Store threadM
+                this.runCommand("start " + M); // ✅ Ensure command execution
+        
+            }).start();    
         }
     }
 
@@ -198,16 +231,74 @@ public class Solution implements CommandRunner{
         threads.put(N, t);  
         tasks.put(N, task);
         t.start();
-        task.setStatus("started");
+        task.setStatus(SlowCalculator.STATE.CALCULATING);
     }
 
-    private void handleCancel(Long N){
-        Thread t = threads.get(N);
-        SlowCalculator calculator = tasks.get(N);
-        if ( t.isAlive()) {  
-            t.interrupt(); // sets interrupt flag
-            calculator.setStatus("cancelled");  
-            dependencies.remove(N);
+    // private void handleCancel(Long N) {
+    //     // Null checks for thread and task
+    //     Thread t = threads.get(N);
+    //     SlowCalculator calculator = tasks.get(N);
+    //     if (t == null || calculator == null) {
+    //         return;
+    //     }
+    
+    //     // Ensure thread safety when accessing shared resources
+    //     synchronized (threads) {
+    //         if (t.isAlive()) {
+    //             t.interrupt(); // Interrupt the thread
+    //             // Remove N as a key from dependencies (if it exists)
+    //             dependencies.remove(N);
+    
+    //             // Remove N from the values of dependencies (i.e., remove N from other tasks' dependency lists)
+    //             for (Map.Entry<Long, Long> entry : dependencies.entrySet()) {
+    //                 if (entry.getValue().equals(N)) {
+    //                     dependencies.remove(entry.getKey()); // Remove the task that depends on N
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     for (Map.Entry<Long, Long> entry : dependencies.entrySet()){
+    //         if (entry.getValue().equals(N)) {
+    //             Thread thread = threads.get(entry.getKey());
+    //             SlowCalculator task = tasks.get(entry.getKey());
+    //             if(task != null && thread != null && task.getStatus().equals("waiting")){
+    //                 thread.start();
+    //                 task.setStatus("started");
+    //             }
+    //         }
+    //     }
+    // }
+    private void handleCancel(Long N) {
+    Thread t = threads.get(N);
+    SlowCalculator calculator = tasks.get(N);
+
+    if (t != null && calculator != null) {
+        synchronized (threads) {
+            if (t.isAlive()) {
+                t.interrupt(); // Interrupt the thread
+                calculator.setStatus(SlowCalculator.STATE.CANCELLED); // Update status
+            }
+        }
+
+        // Start all tasks that depend on N
+        for (Map.Entry<Long, Long> entry : dependencies.entrySet()) {
+            if (entry.getValue().equals(N)) {
+                Long dependentTaskId = entry.getKey();
+                SlowCalculator dependentCalculator = tasks.get(dependentTaskId);
+
+                if (dependentCalculator != null && dependentCalculator.getStatus().equals(SlowCalculator.STATE.WAITING)) {
+                    // Create a new thread for the dependent task
+                    Thread dependentThread = new Thread(dependentCalculator);
+                    dependentThread.start(); // Start the dependent task
+
+                    // Update the threads map
+                    threads.put(dependentTaskId, dependentThread);
+
+                    // Update the status of the dependent task
+                    dependentCalculator.setStatus(SlowCalculator.STATE.CALCULATING);;
+                }
+            }
         }
     }
+}
 }

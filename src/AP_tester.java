@@ -1,12 +1,15 @@
 public class AP_tester {
 	public static void main(String[] args) {
 		Solution solution = new Solution();
-		// instructionTester(solution);
-		abortSpeedTester(solution);
-//		successiveAfterTester(solution);
-//		AfterNoRunnableThread(solution);
-//		circularDependencyTester(solution);
-//		competingAfterTester(solution);
+//		instructionTester(solution);
+		// System.out.println(abortSpeedTester(solution));
+		// successiveAfterTester(solution);
+		// AfterNoRunnableThread(solution);
+		// noCalculationTester(solution);
+		// circularDependencyTester(solution);  // OK
+		// cancelNonExistant(solution);   // not sure if it should return empty string or still print out //cancelled N
+		// System.out.println(cancelSpeedTester(solution)); //OK
+		competingAfterTester(solution); 
 //		CancelThreadWhileWaitingTester(solution);
 //		CancelMiddleOfMultipleWaitingThreadsTester(solution);
 //		multipleGetStatusTester(solution);
@@ -16,20 +19,40 @@ public class AP_tester {
 	}
 	
 	public static void instructionTester(Solution solution) {
-		System.out.println(solution.runCommand("start 104560"));
+		System.out.println(solution.runCommand("start 10456060"));
 		System.out.println(solution.runCommand("running"));
 		sleep();
-		System.out.println(solution.runCommand("get 104560"));
-		System.out.println(solution.runCommand("start 723456"));
-		System.out.println(solution.runCommand("start 5349125"));
-		System.out.println(solution.runCommand("get 5349125"));
+		System.out.println(solution.runCommand("get 10456060"));
+		System.out.println(solution.runCommand("start 72345680"));
+		System.out.println(solution.runCommand("start 534912560"));
+		System.out.println(solution.runCommand("get 534912560"));
 		System.out.println(solution.runCommand("running"));
-		System.out.println(solution.runCommand("cancel 723456"));
+		System.out.println(solution.runCommand("cancel 72345680"));
 		System.out.println(solution.runCommand("running"));
 		System.out.println(solution.runCommand("finish"));
 	}
 	
-	public static void abortSpeedTester(Solution solution) {
+	public static void cancelNonExistant(Solution solution) {
+		System.out.println(solution.runCommand("cancel 10456060"));
+	}
+	
+	public static void noCalculationTester(Solution solution) {
+		System.out.println(solution.runCommand("running"));
+	}
+	
+	
+	public static String cancelSpeedTester(Solution solution) {
+		System.out.println(solution.runCommand("start 1723456800"));
+		System.out.println("should abort less than 100ms");
+	    long startTime = System.currentTimeMillis();
+		System.out.println(solution.runCommand("cancel 1723456800"));
+		System.out.println(solution.runCommand("abort"));
+	    long endTime = System.currentTimeMillis();
+	    long duration = endTime - startTime;
+	    return ("Method execution time: " + duration + " ms");
+	}
+	
+	public static String abortSpeedTester(Solution solution) {
 		System.out.println(solution.runCommand("start 1723456800"));
 		System.out.println(solution.runCommand("start 2723456800"));
 		System.out.println(solution.runCommand("start 3723456800"));
@@ -58,7 +81,7 @@ public class AP_tester {
 		System.out.println(solution.runCommand("abort"));
 	    long endTime = System.currentTimeMillis();
 	    long duration = endTime - startTime;
-	    System.out.println("Method execution time: " + duration + " ms");
+	    return ("Method execution time: " + duration + " ms");
 	}
 	
 	
@@ -87,7 +110,12 @@ public class AP_tester {
 		System.out.println(solution.runCommand("start 1111111111"));
 		System.out.println(solution.runCommand("after 1111111111 2"));
 		System.out.println(solution.runCommand("after 2 3"));
-		System.out.println(solution.runCommand("after 3 1111111111"));
+		System.out.println(solution.runCommand("after 3 4"));
+		System.out.println(solution.runCommand("after 4 5"));
+		System.out.println(solution.runCommand("after 5 6"));
+		System.out.println("command after 6 2 should create CD");
+		System.out.println("⇩Circular Dependency 6 3 4 5 2");
+		System.out.println(solution.runCommand("after 6 2"));
 		System.out.println(solution.runCommand("abort"));
 	}
 
@@ -188,7 +216,7 @@ public class AP_tester {
 
 	public static void sleep() {
 		try {
-		    Thread.sleep(1400); // Pauses for 1400 milliseconds (1.4 second)
+		    Thread.sleep(20000); // Pauses for 1400 milliseconds (1.4 second)
 		} catch (InterruptedException e) {
 		    Thread.currentThread().interrupt(); // Restore interrupted status
 		}
