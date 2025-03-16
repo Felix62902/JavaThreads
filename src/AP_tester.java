@@ -9,13 +9,13 @@ public class AP_tester {
 		// circularDependencyTester(solution);  // OK
 		// cancelNonExistant(solution);   // not sure if it should return empty string or still print out //cancelled N
 		// System.out.println(cancelSpeedTester(solution)); //OK
-		competingAfterTester(solution); 
-//		CancelThreadWhileWaitingTester(solution);
-//		CancelMiddleOfMultipleWaitingThreadsTester(solution);
-//		multipleGetStatusTester(solution);
-//		finishCalculationTester(solution);
-//		nothingToFinishTester(solution);
-//		wrongCommandsTester(solution);
+		// competingAfterTester(solution);   //OK😭
+		// CancelThreadWhileWaitingTester(solution); // ok
+		// CancelMiddleOfMultipleWaitingThreadsTester(solution);//
+		// multipleGetStatusTester(solution);
+		// finishCalculationTester(solution);
+		// nothingToFinishTester(solution);
+		wrongCommandsTester(solution);
 	}
 	
 	public static void instructionTester(Solution solution) {
@@ -135,7 +135,9 @@ public class AP_tester {
 	
 	public static void CancelThreadWhileWaitingTester(Solution solution) {
 		System.out.println(solution.runCommand("start 1111111111"));
+		
 		System.out.println(solution.runCommand("after 1111111111 2222222222"));
+		// System.out.println(solution.runCommand("get 1111111111"));
 		System.out.println(solution.runCommand("cancel 2222222222"));
 		System.out.println(solution.runCommand("cancel 1111111111"));
 		System.out.println("2222222222 should never run, running thread should be 0");
@@ -144,8 +146,8 @@ public class AP_tester {
 	}
 	
 	public static void CancelMiddleOfMultipleWaitingThreadsTester(Solution solution) {
-		System.out.println(solution.runCommand("start 1111111111"));
-		System.out.println(solution.runCommand("after 1111111111 2"));
+		System.out.println(solution.runCommand("start 111"));
+		System.out.println(solution.runCommand("after 111 2"));
 		System.out.println(solution.runCommand("after 2 33333333333"));
 		System.out.println(solution.runCommand("after 33333333333 44444444444"));
 		System.out.println(solution.runCommand("cancel 2"));
