@@ -1,33 +1,38 @@
 public class AP_tester {
 	public static void main(String[] args) {
 		Solution solution = new Solution();
-//		instructionTester(solution);
-		// System.out.println(abortSpeedTester(solution));
-		// successiveAfterTester(solution);
-		// AfterNoRunnableThread(solution);
-		// noCalculationTester(solution);
-		// circularDependencyTester(solution);  // OK
-		// cancelNonExistant(solution);   // not sure if it should return empty string or still print out //cancelled N
+		// instructionTester(solution); // OK
+		// System.out.println(abortSpeedTester(solution)); //OK
+		// successiveAfterTester(solution);  //OK
+		// AfterNoRunnableThread(solution);  //OK
+		// noCalculationTester(solution);  // OK
+		
+		// cancelNonExistant(solution);   // OK
 		// System.out.println(cancelSpeedTester(solution)); //OK
-		// competingAfterTester(solution);   //OK😭
-		// CancelThreadWhileWaitingTester(solution); // ok
-		// CancelMiddleOfMultipleWaitingThreadsTester(solution);//
+		
+		
 		// multipleGetStatusTester(solution);
 		// finishCalculationTester(solution);
 		// nothingToFinishTester(solution);
-		wrongCommandsTester(solution);
+		// wrongCommandsTester(solution);
+
+		//Problematic Afters
+		// CancelMiddleOfMultipleWaitingThreadsTester(solution);//!
+		// competingAfterTester(solution);   //OK
+		// circularDependencyTester(solution);  // OK
+		CancelThreadWhileWaitingTester(solution); // ok
 	}
 	
 	public static void instructionTester(Solution solution) {
-		System.out.println(solution.runCommand("start 10456060"));
+		System.out.println(solution.runCommand("start 104565"));
 		System.out.println(solution.runCommand("running"));
-		sleep();
-		System.out.println(solution.runCommand("get 10456060"));
-		System.out.println(solution.runCommand("start 72345680"));
-		System.out.println(solution.runCommand("start 534912560"));
-		System.out.println(solution.runCommand("get 534912560"));
+		// sleep();
+		System.out.println(solution.runCommand("get 104565"));
+		System.out.println(solution.runCommand("start 72345"));
+		System.out.println(solution.runCommand("start 534912"));
+		System.out.println(solution.runCommand("get 534912"));
 		System.out.println(solution.runCommand("running"));
-		System.out.println(solution.runCommand("cancel 72345680"));
+		System.out.println(solution.runCommand("cancel 72345"));
 		System.out.println(solution.runCommand("running"));
 		System.out.println(solution.runCommand("finish"));
 	}
@@ -102,7 +107,8 @@ public class AP_tester {
 		System.out.println(solution.runCommand("start 1111111111"));
 		System.out.println(solution.runCommand("cancel 1111111111"));
 		System.out.println("⇩immediately start calculation for 2");
-		System.out.println(solution.runCommand("after 1111111111 2"));
+		System.out.println(solution.runCommand("after 1111111111 222222222"));
+		System.out.println(solution.runCommand("running"));
 		System.out.println(solution.runCommand("abort"));
 	}
 	
@@ -113,6 +119,7 @@ public class AP_tester {
 		System.out.println(solution.runCommand("after 3 4"));
 		System.out.println(solution.runCommand("after 4 5"));
 		System.out.println(solution.runCommand("after 5 6"));
+		System.err.println(solution.runCommand("running"));
 		System.out.println("command after 6 2 should create CD");
 		System.out.println("⇩Circular Dependency 6 3 4 5 2");
 		System.out.println(solution.runCommand("after 6 2"));
@@ -150,11 +157,13 @@ public class AP_tester {
 		System.out.println(solution.runCommand("after 111 2"));
 		System.out.println(solution.runCommand("after 2 33333333333"));
 		System.out.println(solution.runCommand("after 33333333333 44444444444"));
+		System.out.println(solution.runCommand("get 2"));
 		System.out.println(solution.runCommand("cancel 2"));
 		System.out.println("3* and 4* should start immediately");
 		System.out.println("there should be 3 running, 1*, 3*");
 		System.out.println(solution.runCommand("running"));
 		System.out.println("4* should be waiting 3* to finish");
+		System.out.println(solution.runCommand("get 2"));
 		System.out.println(solution.runCommand("get 44444444444"));
 		System.out.println(solution.runCommand("abort"));
 	}

@@ -22,17 +22,12 @@ public class SlowCalculator implements Runnable {
     @Override
     public void run() {
         status = STATE.CALCULATING;
-        System.out.println("Started calculation for N=" + N);
-
         try {
             result = calculateNumFactors(N);  // Perform calculation
             status = STATE.COMPLETED;
-            System.out.println("Calculation completed for N=" + N + ", result=" + result); 
         } catch (InterruptedException e) {
             status = STATE.CANCELLED;  
-            Thread.currentThread().interrupt();  // Preserve the interrupt flag
-            
-            // System.out.println("Task " + N + " was interrupted.");
+            Thread.currentThread().interrupt();  // Preserve the interrupt flag            
         }
     }
     
